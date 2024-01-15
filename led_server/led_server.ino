@@ -3,62 +3,90 @@
 #include <WebServer.h>
 #include <ESPmDNS.h>
 #include <ArduinoJson.h>
-#include <credentials.h>
+#include "credentials.h"
 
 WebServer server(80);
 
 const int led = 13;
 
+bool LedIsOn = true;
+
 void handleRoot() {
   digitalWrite(led, 1);
-  server.send(200, "text/html", R"=====(
-        <!DOCTYPE html>
-        <html lang="en">
-        <head>
-            <meta charset="UTF-8">
-            <title>Almost Smart Home</title>
-        </head>
-        <body>
-            <button onclick="postData(1)">Button 1</button>
-            <button onclick="postData(2)">Button 2</button>
-            <button onclick="postData(3)">Button 3</button>
+  server.send(200, "text/html", R"html(
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Almost Smart Home</title>
+</head>
+<body>
+    <button onclick="setStatusOn()">On</button>
+    <button onclick="setStatusOff()">Off</button>
+    <button onclick="postData(3)">Button 3</button>
 
-            <script>
-                function postData(number) {
-                    fetch('/set', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({ number: number })
-                    })
-                    .then(response => response.json())
-                    .then(data => console.log(data))
-                    .catch(error => console.error('Error:', error));
-                }
-            </script>
-        </body>
-        </html>
-    )=====");
+    <script>
+        function postData(number) {
+            fetch('/set', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ number: number })
+            })
+            .then(response => response.json())
+            .then(data => console.log(data))
+            .catch(error => console.error('Error:', error));
+        }
+
+        const setStatusOn = () => setStatus("on");
+        const setStatusOff = () => setStatus("off");
+
+
+        function setStatus(newStatus){
+          fetch('/set', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ status: newStatus })
+            })
+            .then(response => response.json())
+            .then(data => console.log(data))
+            .catch(error => console.error('Error:', error));
+        }
+    </script>
+</body>
+</html>
+)html");
   digitalWrite(led, 0);
 }
 
 void handleSet() {
-  digitalWrite(led, 1);
-  Serial.println("hallo");
-  Serial.println(server.header("Content-Type"));
-  // Check if the content type is application/json
+  Serial.println("hallo");  
 
-  // Parse the JSON data
   DynamicJsonDocument jsonDoc(1024);
   deserializeJson(jsonDoc, server.arg("plain"));
 
-  // Extract the number from the JSON
-  int number = jsonDoc["number"];
+  // Extract the status from the JSON
+  String status = jsonDoc["status"];
 
-  // Log the number to the serial console
-  Serial.print("Received number: ");
-  Serial.println(number);
+  // Log the status to the serial console
+  Serial.print("Received status: ");
+  Serial.println(status);
+
+  // Handle the status
+  if (status == "on") {
+    // Code to turn something on
+    Serial.println("on");
+  } else if (status == "off") {
+    // Code to turn something off
+    Serial.println("off");
+  } else {
+    server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Invalid status\"}");
+    digitalWrite(led, 0);
+    return;
+  }
 
   server.send(200, "application/json", "{\"status\":\"ok\"}");
   digitalWrite(led, 0);
@@ -105,7 +133,7 @@ void setup(void) {
   }
 
   server.on("/", handleRoot);
-  server.on("/set", HTTP_POST, handleSet);  // Updated to handle the /set route for POST requests
+  server.on("/set", HTTP_POST, handleSet);
 
   server.onNotFound(handleNotFound);
 
