@@ -3,7 +3,13 @@
 #include <WebServer.h>
 #include <ESPmDNS.h>
 #include <ArduinoJson.h>
+#include <FastLED.h>
 #include "credentials.h"
+
+#define NUM_LEDS 30
+#define DATA_PIN 3
+#define CLOCK_PIN 13
+CRGB leds[NUM_LEDS];
 
 WebServer server(80);
 
@@ -110,6 +116,9 @@ void handleNotFound() {
 }
 
 void setup(void) {
+	delay(2000);
+  FastLED.addLeds<WS2811, DATA_PIN, RGB>(leds, NUM_LEDS);
+
   pinMode(led, OUTPUT);
   digitalWrite(led, 0);
   Serial.begin(115200);
@@ -143,5 +152,15 @@ void setup(void) {
 
 void loop(void) {
   server.handleClient();
+  for(int whiteLed = 0; whiteLed < NUM_LEDS; whiteLed = whiteLed + 1) {
+      // Turn our current led on to white, then show the leds
+      leds[whiteLed] = CRGB::White;
+      
+      // Show the leds (only one of which is set to white, from above)
+      FastLED.show();
+
+      // Turn our current led back to black for the next loop around
+      leds[whiteLed] = CRGB::Black;
+   }
   delay(2);  // allow the CPU to switch to other tasks
 }
