@@ -3,9 +3,7 @@
 #include <WebServer.h>
 #include <ESPmDNS.h>
 #include <ArduinoJson.h>
-
-const char* ssid = "ssid"; 
-const char* password = "password";
+#include <credentials.h>
 
 WebServer server(80);
 
