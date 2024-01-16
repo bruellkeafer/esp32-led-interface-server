@@ -182,9 +182,6 @@ void setup(void) {
 
   server.begin();
   Serial.println("HTTP server started");
-
-  for (int whiteLed = 0; whiteLed < NUM_LEDS; whiteLed = whiteLed + 1) {
-  }
 }
 
 void loop(void) {
